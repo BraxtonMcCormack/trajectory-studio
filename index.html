@@ -1,7 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive visualizer for interplanetary spaceflight trajectories.">
+<meta name="color-scheme" content="dark">
 <title>Trajectory Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Standalone reset (parallel to the artifact runtime's own skeleton) */
+  html, body { height: 100%; margin: 0; }
+  body { background: #06080f; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
 <style>
   :root {
     --bg: #06080f;
@@ -398,6 +412,8 @@
     * { transition: none !important; }
   }
 </style>
+</head>
+<body>
 
 <div id="app">
   <aside class="panel">
@@ -1562,3 +1578,5 @@
   boot();
 })();
 </script>
+</body>
+</html>
