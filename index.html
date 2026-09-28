@@ -1,0 +1,1564 @@
+<title>Trajectory Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #06080f;
+    --panel: #0d1220;
+    --panel-2: #131a2c;
+    --border: #1e2740;
+    --border-strong: #2b3653;
+    --ink: #e8ecf5;
+    --ink-2: #b8c2d6;
+    --muted: #7a8ba8;
+    --dim: #4a5670;
+    --sun: #ffb547;
+    --sun-glow: rgba(255, 181, 71, 0.35);
+    --craft: #7cc4ff;
+    --craft-glow: rgba(124, 196, 255, 0.55);
+    --target: #ff7a7a;
+    --earth: #5aa8ff;
+    --accent: #7cc4ff;
+    --grid: #182035;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  * { box-sizing: border-box; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  #app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100%;
+    width: 100%;
+  }
+
+  aside.panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  aside header.brand {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .brand .sub {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: thin;
+  }
+  .section .label {
+    color: var(--muted);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 8px;
+  }
+  .missions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mission-btn {
+    text-align: left;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 9px 11px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .mission-btn:hover { background: var(--panel-2); color: var(--ink); }
+  .mission-btn.active {
+    background: var(--panel-2);
+    border-color: var(--border-strong);
+    color: var(--ink);
+  }
+  .mission-btn .name { font-weight: 500; font-size: 13.5px; }
+  .mission-btn .meta { color: var(--muted); font-size: 11.5px; }
+  .mission-btn.active .meta { color: var(--ink-2); }
+
+  .toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    user-select: none;
+  }
+  .toggle input { accent-color: var(--accent); }
+  .toggle.full { grid-column: 1 / -1; }
+
+  textarea.json-input {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  textarea.json-input:focus { outline: none; border-color: var(--border-strong); }
+  .row { display: flex; gap: 6px; }
+  .btn {
+    flex: 1;
+    background: var(--panel-2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 12.5px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .btn:hover { background: #1a2238; border-color: var(--border-strong); }
+  .btn.primary { background: rgba(124, 196, 255, 0.14); border-color: rgba(124, 196, 255, 0.35); color: #cfe6ff; }
+  .btn.primary:hover { background: rgba(124, 196, 255, 0.22); }
+  .btn.small { padding: 5px 9px; font-size: 11.5px; flex: 0 0 auto; }
+  .status {
+    font-size: 11.5px;
+    color: var(--muted);
+    min-height: 1.2em;
+    margin-top: 4px;
+  }
+  .status.err { color: #ff9d9d; }
+  .status.ok { color: #9dd6a5; }
+
+  details.help {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  details.help summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    user-select: none;
+  }
+  details.help[open] summary { margin-bottom: 8px; color: var(--ink-2); }
+  details.help pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-2);
+    overflow-x: auto;
+    margin: 6px 0 0;
+    line-height: 1.5;
+  }
+  details.help p { margin: 6px 0; }
+  details.help code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--craft);
+    background: rgba(124,196,255,0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  main.stage {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    background: radial-gradient(ellipse at center, #0a1020 0%, var(--bg) 70%);
+    overflow: hidden;
+  }
+  canvas#sky {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  canvas#sky.dragging { cursor: grabbing; }
+  canvas#sky.flat { cursor: default; }
+
+  .hud {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(13, 18, 32, 0.86);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 4px 16px;
+    font-size: 12px;
+    min-width: 220px;
+  }
+  .hud .k { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; align-self: center; }
+  .hud .v { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; color: var(--ink); font-size: 13px; text-align: right; }
+  .hud .title-row {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hud .mission-name { font-weight: 600; font-size: 13.5px; }
+  .hud .mission-tgt { color: var(--target); font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+
+  .zoom {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(13, 18, 32, 0.86);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .zoom button {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: var(--ink);
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .zoom button:hover { background: var(--panel-2); }
+  .zoom button.active { background: rgba(124,196,255,0.18); color: #cfe6ff; }
+  .zoom .scale {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted);
+    text-align: center;
+    padding: 2px 4px;
+    min-width: 40px;
+    letter-spacing: 0.03em;
+  }
+  .zoom .divider { height: 1px; background: var(--border); margin: 2px 4px; }
+
+  .timeline {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(6,8,15,0.96), rgba(6,8,15,0.7) 70%, transparent);
+    padding: 40px 20px 18px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .play {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--craft);
+    color: #04121f;
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .play:hover { background: #a0d5ff; }
+  .play:active { transform: scale(0.94); }
+  .play svg { display: block; }
+  .scrubber {
+    flex: 1;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .scrubber .track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .scrubber .fill {
+    height: 100%;
+    background: var(--craft);
+    width: 0%;
+  }
+  .scrubber .handle {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    background: #eaf4ff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 2px rgba(124,196,255,0.35), 0 0 12px rgba(124,196,255,0.5);
+    pointer-events: none;
+  }
+  .speed {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .speed:focus { outline: none; border-color: var(--border-strong); }
+
+  /* mobile / narrow */
+  @media (max-width: 780px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    aside.panel {
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+      max-height: 45vh;
+    }
+    aside header.brand { padding: 14px 16px 10px; }
+    .hud { top: auto; bottom: 90px; right: 12px; left: 12px; min-width: 0; padding: 10px 12px; }
+    .hud .title-row { margin-bottom: 4px; padding-bottom: 6px; }
+    .zoom { top: 12px; left: 12px; }
+    .timeline { padding-left: 12px; padding-right: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div id="app">
+  <aside class="panel">
+    <header class="brand">
+      <h1>Trajectory Studio</h1>
+      <div class="sub mono">Interplanetary flight visualizer</div>
+    </header>
+    <div class="panel-body">
+      <div class="section">
+        <div class="label">Missions</div>
+        <div class="missions" id="missions"></div>
+      </div>
+
+      <div class="section">
+        <div class="label">Display</div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="opt-orbits" checked> Planet orbits</label>
+          <label class="toggle"><input type="checkbox" id="opt-labels" checked> Planet labels</label>
+          <label class="toggle"><input type="checkbox" id="opt-trail" checked> Trajectory trail</label>
+          <label class="toggle"><input type="checkbox" id="opt-full"> Full path ghost</label>
+          <label class="toggle"><input type="checkbox" id="opt-grid"> AU grid rings</label>
+          <label class="toggle"><input type="checkbox" id="opt-3d"> 3D view</label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label">Custom mission (JSON)</div>
+        <textarea class="json-input" id="json-input" spellcheck="false" placeholder='{"name":"...", "epoch":"2030-01-01", "trajectory":[[0,1,0],[10,1.02,0.05], ...]}'></textarea>
+        <div class="row" style="margin-top: 8px;">
+          <button class="btn primary" id="load-json">Load</button>
+          <button class="btn" id="export-json">Export current</button>
+        </div>
+        <div class="status" id="status"></div>
+
+        <details class="help" style="margin-top: 10px;">
+          <summary>Data format</summary>
+          <p>Sampled heliocentric positions in the ecliptic frame. Units: AU, days from epoch. Rows are <code>[days, x, y]</code> or <code>[days, x, y, z]</code>.</p>
+          <pre>{
+  "name": "My Mission",
+  "epoch": "2030-01-01",
+  "target": "Alpha Centauri",
+  "trajectory": [
+    [0,     1.00,  0.00,  0.00],
+    [30,    1.05,  0.15,  0.01],
+    [60,    1.11,  0.29,  0.02]
+  ]
+}</pre>
+          <p>Get real vectors from <a href="https://ssd.jpl.nasa.gov/horizons/" target="_blank" rel="noopener" style="color:var(--craft)">JPL Horizons</a> (vector table, ecliptic frame). Drag on the canvas in 3D mode to rotate the view.</p>
+        </details>
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="sky" class="flat"></canvas>
+
+    <div class="zoom">
+      <button id="zoom-in" title="Zoom in">+</button>
+      <div class="scale mono" id="scale-label">1 AU</div>
+      <button id="zoom-out" title="Zoom out">−</button>
+      <button id="zoom-fit" title="Fit trajectory">⤢</button>
+      <div class="divider"></div>
+      <button id="view-reset" title="Reset view angle">⌖</button>
+    </div>
+
+    <div class="hud" id="hud">
+      <div class="title-row">
+        <span class="mission-name" id="hud-name">—</span>
+        <span class="mission-tgt" id="hud-target">—</span>
+      </div>
+      <div class="k">Date</div><div class="v" id="hud-date">—</div>
+      <div class="k">T+</div><div class="v" id="hud-elapsed">—</div>
+      <div class="k">r ⊙</div><div class="v" id="hud-r">—</div>
+      <div class="k">Speed</div><div class="v" id="hud-v">—</div>
+    </div>
+
+    <div class="timeline">
+      <button class="play" id="play" aria-label="Play/Pause">
+        <svg id="play-icon" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" d="M4 3 L13 8 L4 13 Z"/></svg>
+      </button>
+      <div class="scrubber" id="scrubber">
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="handle" id="handle"></div>
+      </div>
+      <select class="speed mono" id="speed">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="3">3×</option>
+        <option value="10">10×</option>
+        <option value="30">30×</option>
+        <option value="100">100×</option>
+      </select>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ============ orbital mechanics ============
+  const MU = 4 * Math.PI * Math.PI;           // AU^3 / yr^2 (heliocentric, GM_sun)
+  const DAY = 1 / 365.25;                     // yr per day
+  const AU_KM = 149597870.7;
+  const deg = d => d * Math.PI / 180;
+  const rad = r => r * 180 / Math.PI;
+
+  function solveElliptic(M, e) {
+    // Wrap into [-π, π] for stability
+    M = ((M + Math.PI) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI) - Math.PI;
+    let E = M;
+    for (let i = 0; i < 40; i++) {
+      const f = E - e * Math.sin(E) - M;
+      const fp = 1 - e * Math.cos(E);
+      const d = f / fp;
+      E -= d;
+      if (Math.abs(d) < 1e-11) break;
+    }
+    return E;
+  }
+  function solveHyperbolic(M, e) {
+    let H = Math.asinh(M / e);
+    for (let i = 0; i < 60; i++) {
+      const f = e * Math.sinh(H) - H - M;
+      const fp = e * Math.cosh(H) - 1;
+      const d = f / fp;
+      H -= d;
+      if (Math.abs(d) < 1e-11) break;
+    }
+    return H;
+  }
+
+  // Full 3D Kepler orbit sample. Elements: a (AU, negative for hyperbolic),
+  // e, i (deg), Ω longitude of ascending node (deg), ω argument of perihelion (deg),
+  // tp = time of perihelion passage (days from mission epoch).
+  // Returns [[t_days, x, y, z], ...].
+  function kepler3D(a, e, iDeg, OmDeg, wDeg, tpDays, tsDays, direction = 1) {
+    const i = deg(iDeg), Om = deg(OmDeg), w = deg(wDeg);
+    const aAbs = Math.abs(a);
+    const n = Math.sqrt(MU / (aAbs*aAbs*aAbs));   // rad / yr
+    const cw = Math.cos(w), sw = Math.sin(w);
+    const ci = Math.cos(i), si = Math.sin(i);
+    const cO = Math.cos(Om), sO = Math.sin(Om);
+    const pts = [];
+    for (const td of tsDays) {
+      const tYr = (td - tpDays) * DAY;
+      const M = n * tYr * direction;
+      let nu, r;
+      if (e < 1) {
+        const E = solveElliptic(M, e);
+        nu = 2 * Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+        r = a * (1 - e*Math.cos(E));
+      } else {
+        const H = solveHyperbolic(M, e);
+        nu = 2 * Math.atan2(Math.sqrt(e+1)*Math.sinh(H/2), Math.sqrt(e-1)*Math.cosh(H/2));
+        r = aAbs * (e*Math.cosh(H) - 1);
+      }
+      const xo = r * Math.cos(nu), yo = r * Math.sin(nu);
+      // Perifocal → ecliptic: R = Rz(Ω) * Rx(i) * Rz(ω)
+      const x1 = xo*cw - yo*sw;
+      const y1 = xo*sw + yo*cw;
+      const x2 = x1;
+      const y2 = y1 * ci;
+      const z2 = y1 * si;
+      const x = x2 * cO - y2 * sO;
+      const y = x2 * sO + y2 * cO;
+      const z = z2;
+      pts.push([td, x, y, z]);
+    }
+    return pts;
+  }
+
+  // 2D convenience wrapper — orbit in ecliptic plane (i=0), Ω=0.
+  function kepler2D(a, e, wDeg, tpDays, tsDays, direction = 1) {
+    return kepler3D(a, e, 0, 0, wDeg, tpDays, tsDays, direction);
+  }
+
+  // Build a full trajectory from a list of Kepler segments, dedup boundaries.
+  function buildFromSegments(segments, samplesPerSeg = 240) {
+    const all = [];
+    for (const s of segments) {
+      const { a, e, i = 0, Om = 0, w, tp, tStart, tEnd, direction = 1 } = s;
+      const N = samplesPerSeg;
+      const ts = [];
+      for (let k = 0; k <= N; k++) ts.push(tStart + (tEnd - tStart) * k / N);
+      const pts = kepler3D(a, e, i, Om, w, tp, ts, direction);
+      if (all.length && Math.abs(all[all.length-1][0] - pts[0][0]) < 1e-6) pts.shift();
+      for (const p of pts) all.push(p);
+    }
+    return all;
+  }
+
+  // Rigid rotation of a 3D trajectory around the z-axis (ecliptic pole).
+  function rotateTrajZ(traj, angleRad) {
+    const c = Math.cos(angleRad), s = Math.sin(angleRad);
+    return traj.map(([t, x, y, z]) => [t, x*c - y*s, x*s + y*c, z ?? 0]);
+  }
+
+  // ============ planets ============
+  // Mean elements at J2000. a (AU), e, longitude of perihelion ϖ (deg), mean longitude L0 (deg),
+  // orbital period P (yr). i, Ω omitted (planets treated as coplanar in the ecliptic — good enough visually).
+  const J2000 = Date.UTC(2000, 0, 1, 12) / 86400000;   // days since 1970 UTC
+  const PLANETS = [
+    { name: 'Mercury', color: '#c9b998', a: 0.38710, e: 0.20563, i: 7.005,  Om: 48.331,  varpi: 77.457,  L0: 252.251, P: 0.24085, r: 2.2 },
+    { name: 'Venus',   color: '#e8c188', a: 0.72333, e: 0.00677, i: 3.395,  Om: 76.680,  varpi: 131.603, L0: 181.980, P: 0.61520, r: 3.4 },
+    { name: 'Earth',   color: '#5aa8ff', a: 1.00000, e: 0.01671, i: 0.000,  Om: -11.260, varpi: 102.937, L0: 100.464, P: 1.00002, r: 3.6 },
+    { name: 'Mars',    color: '#e07b5e', a: 1.52371, e: 0.09339, i: 1.850,  Om: 49.558,  varpi: 336.041, L0: 355.433, P: 1.88085, r: 2.6 },
+    { name: 'Jupiter', color: '#d9a86a', a: 5.20260, e: 0.04849, i: 1.303,  Om: 100.464, varpi: 14.728,  L0: 34.351,  P: 11.8618, r: 7.0 },
+    { name: 'Saturn',  color: '#d6c07a', a: 9.55491, e: 0.05551, i: 2.489,  Om: 113.665, varpi: 92.432,  L0: 50.077,  P: 29.4571, r: 6.2 },
+    { name: 'Uranus',  color: '#8fd4d9', a: 19.2184, e: 0.04638, i: 0.773,  Om: 74.006,  varpi: 170.964, L0: 314.055, P: 84.0205, r: 5.0 },
+    { name: 'Neptune', color: '#5b8dd6', a: 30.1104, e: 0.00946, i: 1.770,  Om: 131.784, varpi: 44.972,  L0: 304.348, P: 164.788, r: 5.0 },
+    { name: 'Pluto',   color: '#c9b8a8', a: 39.482,  e: 0.24883, i: 17.14,  Om: 110.303, varpi: 224.068, L0: 238.929, P: 247.94,  r: 2.0 },
+  ];
+
+  // Perifocal → ecliptic rotation for a body with given argument-of-perihelion, inclination, node.
+  // varpi (longitude of perihelion) = Ω + ω, so ω = varpi − Ω.
+  function _rotateOrbital(xo, yo, argperiDeg, iDeg, OmDeg) {
+    const w = deg(argperiDeg), ir = deg(iDeg), Or = deg(OmDeg);
+    const cw = Math.cos(w), sw = Math.sin(w);
+    const ci = Math.cos(ir), si = Math.sin(ir);
+    const cO = Math.cos(Or), sO = Math.sin(Or);
+    const x1 = xo*cw - yo*sw, y1 = xo*sw + yo*cw;
+    const y2 = y1 * ci, z2 = y1 * si;
+    return { x: x1*cO - y2*sO, y: x1*sO + y2*cO, z: z2 };
+  }
+
+  function planetPos(p, daysJ2000) {
+    const i = p.i || 0, Om = p.Om || 0;
+    const yr = daysJ2000 / 365.25;
+    const L = p.L0 + (360 / p.P) * yr;
+    const M = deg((((L - p.varpi) % 360) + 360) % 360);
+    const E = solveElliptic(M, p.e);
+    const nu = 2 * Math.atan2(Math.sqrt(1+p.e)*Math.sin(E/2), Math.sqrt(1-p.e)*Math.cos(E/2));
+    const r = p.a * (1 - p.e * Math.cos(E));
+    const xo = r * Math.cos(nu), yo = r * Math.sin(nu);
+    const rot = _rotateOrbital(xo, yo, p.varpi - Om, i, Om);
+    return { x: rot.x, y: rot.y, z: rot.z, r };
+  }
+
+  function planetAngle(p, daysJ2000) {
+    const pos = planetPos(p, daysJ2000);
+    return Math.atan2(pos.y, pos.x);
+  }
+
+  function orbitPolyline(p, n = 220) {
+    const i = p.i || 0, Om = p.Om || 0;
+    const argperi = p.varpi - Om;
+    const pts = [];
+    for (let k = 0; k <= n; k++) {
+      const nu = (k/n) * 2 * Math.PI;
+      const r = p.a * (1 - p.e*p.e) / (1 + p.e * Math.cos(nu));
+      const rot = _rotateOrbital(r * Math.cos(nu), r * Math.sin(nu), argperi, i, Om);
+      pts.push([rot.x, rot.y, rot.z]);
+    }
+    return pts;
+  }
+
+  // ============ launch window search ============
+  // Find the departure date (days from J2000) near a nominal date such that at arrival time
+  // the target planet is at the required heliocentric angle. Used for Hohmann-transfer legs.
+  // targetLeadDeg = required (angleTarget - angleFrom) at departure, computed from Hohmann geometry.
+  function findLaunchWindow(fromPlanet, toPlanet, nominalDaysJ2000, transferDays, searchYears = 15) {
+    // Hohmann rendezvous: spacecraft launches at fromPlanet angle θ, arrives half-orbit later at θ+180.
+    // Target must be at θ+180 at arrival: angleTarget(t_launch + transfer) = angleFrom(t_launch) + 180.
+    // Equivalently at t_launch: angleTarget - angleFrom = 180 - (360/P_to)*(transfer/365.25).
+    const targetLead = ((180 - (360 / toPlanet.P) * (transferDays / 365.25)) % 360 + 360) % 360;
+    let best = { err: Infinity, days: nominalDaysJ2000 };
+    const step = 3;   // days
+    for (let dd = 0; dd <= searchYears * 365.25; dd += step) {
+      for (const sign of [+1, -1]) {
+        const days = nominalDaysJ2000 + sign * dd;
+        const aF = rad(planetAngle(fromPlanet, days));
+        const aT = rad(planetAngle(toPlanet, days));
+        let lead = ((aT - aF) % 360 + 360) % 360;
+        let err = Math.abs(lead - targetLead);
+        if (err > 180) err = 360 - err;
+        if (err < best.err) best = { err, days };
+        if (dd === 0) break;
+      }
+    }
+    return best;
+  }
+
+  const daysFromEpoch = iso => (Date.parse(iso + 'T00:00:00Z') / 86400000) - J2000;
+  const epochFromDaysJ2000 = d => new Date((d + J2000) * 86400000);
+  const fmtIso = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+
+  // ============ Lambert's problem ============
+  // Given two heliocentric position vectors r1, r2 (AU) and a time-of-flight (years), find the
+  // connecting Kepler arc via the Bate-Mueller-White universal-variable formulation. Prograde only.
+  function stumpffC(z) {
+    if (z > 1e-6) return (1 - Math.cos(Math.sqrt(z))) / z;
+    if (z < -1e-6) return (Math.cosh(Math.sqrt(-z)) - 1) / (-z);
+    return 0.5 - z/24 + z*z/720;
+  }
+  function stumpffS(z) {
+    if (z > 1e-6) { const s = Math.sqrt(z); return (s - Math.sin(s)) / (s*s*s); }
+    if (z < -1e-6) { const s = Math.sqrt(-z); return (Math.sinh(s) - s) / (s*s*s); }
+    return 1/6 - z/120 + z*z/5040;
+  }
+  function lambert(r1v, r2v, tofYears) {
+    const r1z = r1v[2] || 0, r2z = r2v[2] || 0;
+    const r1 = Math.hypot(r1v[0], r1v[1], r1z);
+    const r2 = Math.hypot(r2v[0], r2v[1], r2z);
+    const dot = r1v[0]*r2v[0] + r1v[1]*r2v[1] + r1z*r2z;
+    const crossZ = r1v[0]*r2v[1] - r1v[1]*r2v[0];
+    const cosDnu = dot / (r1 * r2);
+    let A = Math.sqrt(Math.max(0, r1 * r2 * (1 + cosDnu)));
+    if (crossZ < 0) A = -A;
+    if (Math.abs(A) < 1e-8) return null;
+
+    let zLow = -50, zHigh = 4 * Math.PI * Math.PI * 4;
+    let z = 0;
+    for (let iter = 0; iter < 120; iter++) {
+      const C = stumpffC(z), S = stumpffS(z);
+      let y = r1 + r2 + A * (z*S - 1) / Math.sqrt(C);
+      if (y < 0) { zLow = z; z = (z + zHigh) / 2; continue; }
+      const x = Math.sqrt(y / C);
+      const t = (x*x*x * S + A * Math.sqrt(y)) / Math.sqrt(MU);
+      if (Math.abs(t - tofYears) < 1e-8) break;
+      if (t < tofYears) zLow = z; else zHigh = z;
+      z = (zLow + zHigh) / 2;
+    }
+    const C = stumpffC(z), S = stumpffS(z);
+    const y = r1 + r2 + A * (z*S - 1) / Math.sqrt(C);
+    const f = 1 - y / r1;
+    const g = A * Math.sqrt(y / MU);
+    const gdot = 1 - y / r2;
+    return {
+      v1: [ (r2v[0] - f*r1v[0]) / g, (r2v[1] - f*r1v[1]) / g, (r2z - f*r1z) / g ],
+      v2: [ (gdot*r2v[0] - r1v[0]) / g, (gdot*r2v[1] - r1v[1]) / g, (gdot*r2z - r1z) / g ],
+    };
+  }
+
+  // Position (AU) + velocity (AU/yr) at a reference instant → classical orbital elements.
+  // tSincePeriYears is signed: positive = past perihelion at reference instant.
+  function rvToElements(rv, vv) {
+    const clamp = x => Math.max(-1, Math.min(1, x));
+    const r = Math.hypot(rv[0], rv[1], rv[2]);
+    const v = Math.hypot(vv[0], vv[1], vv[2]);
+    const h = [ rv[1]*vv[2] - rv[2]*vv[1], rv[2]*vv[0] - rv[0]*vv[2], rv[0]*vv[1] - rv[1]*vv[0] ];
+    const hm = Math.hypot(h[0], h[1], h[2]);
+    const energy = v*v/2 - MU/r;
+    const a = -MU / (2 * energy);
+    const rDotV = rv[0]*vv[0] + rv[1]*vv[1] + rv[2]*vv[2];
+    const evec = [
+      ((v*v - MU/r)*rv[0] - rDotV*vv[0]) / MU,
+      ((v*v - MU/r)*rv[1] - rDotV*vv[1]) / MU,
+      ((v*v - MU/r)*rv[2] - rDotV*vv[2]) / MU,
+    ];
+    const e = Math.hypot(evec[0], evec[1], evec[2]);
+    const i = Math.acos(clamp(h[2] / hm));
+    const nv = [-h[1], h[0], 0];
+    const nm = Math.hypot(nv[0], nv[1], 0);
+    let Om = 0;
+    if (nm > 1e-10) {
+      Om = Math.acos(clamp(nv[0] / nm));
+      if (nv[1] < 0) Om = 2*Math.PI - Om;
+    }
+    let w;
+    if (nm < 1e-10) {
+      w = Math.atan2(evec[1], evec[0]);
+      if (h[2] < 0) w = 2*Math.PI - w;
+    } else if (e < 1e-10) {
+      w = 0;
+    } else {
+      w = Math.acos(clamp((nv[0]*evec[0] + nv[1]*evec[1]) / (nm * e)));
+      if (evec[2] < 0) w = 2*Math.PI - w;
+    }
+    let nu = 0;
+    if (e > 1e-10) {
+      nu = Math.acos(clamp((evec[0]*rv[0] + evec[1]*rv[1] + evec[2]*rv[2]) / (e * r)));
+      if (rDotV < 0) nu = 2*Math.PI - nu;
+    }
+    let tSincePeri;
+    if (e < 1) {
+      const E = 2 * Math.atan2(Math.sqrt(1-e)*Math.sin(nu/2), Math.sqrt(1+e)*Math.cos(nu/2));
+      const M = E - e * Math.sin(E);
+      tSincePeri = M / Math.sqrt(MU / (a*a*a));
+    } else {
+      const H = 2 * Math.atanh(Math.sqrt((e-1)/(e+1)) * Math.tan(nu/2));
+      const M = e * Math.sinh(H) - H;
+      tSincePeri = M / Math.sqrt(MU / Math.pow(Math.abs(a), 3));
+    }
+    return { a, e, iDeg: i * 180/Math.PI, OmDeg: Om * 180/Math.PI, wDeg: w * 180/Math.PI, tSincePeriYears: tSincePeri };
+  }
+
+  // Build a trajectory that passes through a sequence of real waypoints (planet positions at real
+  // flyby dates), by Lambert-solving each leg and chaining the resulting Kepler arcs.
+  function makeMissionFromFlybys(name, target, launchIso, flybys, escapeDays, fit) {
+    const earth = PLANETS[2];
+    const launchDaysJ = daysFromEpoch(launchIso);
+    const earthPos0 = planetPos(earth, launchDaysJ);
+    const waypoints = [{ tDays: 0, r: [earthPos0.x, earthPos0.y, earthPos0.z] }];
+    for (const fb of flybys) {
+      const daysJ = daysFromEpoch(fb.date);
+      const pos = fb.posFn(daysJ);
+      waypoints.push({ tDays: daysJ - launchDaysJ, r: [pos.x, pos.y, pos.z] });
+    }
+    const all = [];
+    let lastV = null;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const w1 = waypoints[i], w2 = waypoints[i+1];
+      const tof_days = w2.tDays - w1.tDays;
+      const tof_years = tof_days * DAY;
+      const lam = lambert(w1.r, w2.r, tof_years);
+      if (!lam) continue;
+      const el = rvToElements(w1.r, lam.v1);
+      const tpDays = w1.tDays - el.tSincePeriYears * 365.25;
+      const N = 140;
+      const ts = [];
+      for (let k = 0; k <= N; k++) ts.push(w1.tDays + tof_days * k / N);
+      const pts = kepler3D(el.a, el.e, el.iDeg, el.OmDeg, el.wDeg, tpDays, ts, +1);
+      if (all.length > 0) pts.shift();
+      for (const p of pts) all.push(p);
+      lastV = lam.v2;
+    }
+    // Escape leg: at the final flyby, boost velocity to at least 1.2× local solar escape
+    // (a proxy for the gravity-assist kick), then propagate as a Kepler orbit.
+    if (lastV && escapeDays > 0) {
+      const lastPos = waypoints[waypoints.length-1].r;
+      const lastT = waypoints[waypoints.length-1].tDays;
+      const rMag = Math.hypot(lastPos[0], lastPos[1], lastPos[2]);
+      const vMag = Math.hypot(lastV[0], lastV[1], lastV[2]);
+      const vEsc = Math.sqrt(2 * MU / rMag);
+      const vTarget = Math.max(vMag, vEsc * 1.2);
+      const s = vTarget / vMag;
+      const vBoost = [lastV[0]*s, lastV[1]*s, lastV[2]*s];
+      const el = rvToElements(lastPos, vBoost);
+      const tpDays = lastT - el.tSincePeriYears * 365.25;
+      const N = 200;
+      const ts = [];
+      for (let k = 1; k <= N; k++) ts.push(lastT + escapeDays * k / N);
+      const pts = kepler3D(el.a, el.e, el.iDeg, el.OmDeg, el.wDeg, tpDays, ts, +1);
+      for (const p of pts) all.push(p);
+    }
+    return { name, target, epoch: launchIso, trajectory: all, fit };
+  }
+
+  // ============ mission library ============
+  // Trajectories are built in a canonical frame (seg1 perihelion on +x axis),
+  // then rigidly rotated so seg1's start aligns with Earth's actual position at the mission epoch.
+  // For Hohmann missions, the epoch is auto-tuned to a valid launch window near the nominal date.
+
+  function makeLyra() {
+    // Project Lyra (Hein et al. 2019): Earth → Jupiter → sundive → hyperbolic escape to 'Oumuamua.
+    const earth = PLANETS[2], jupiter = PLANETS[4];
+    // Phase 1: Hohmann Earth → Jupiter.
+    const a1 = (1 + 5.2)/2, e1 = (5.2 - 1)/(5.2 + 1);
+    const halfP1 = Math.PI * Math.sqrt(a1*a1*a1 / MU) * 365.25;
+    // Phase 2: aphelion at Jupiter distance (post-flyby), perihelion at 0.02 AU (solar Oberth).
+    const a2 = (5.2 + 0.02)/2, e2 = (5.2 - 0.02)/(5.2 + 0.02);
+    const halfP2 = Math.PI * Math.sqrt(a2*a2*a2 / MU) * 365.25;
+    // Phase 3: post-Oberth hyperbolic escape (e ~ 4).
+    const eEsc = 4.0, rpEsc = 0.02;
+    const aEsc = -rpEsc / (eEsc - 1);
+
+    // Auto-tune launch date near 2030-01-01 for valid Earth→Jupiter phase
+    const nominal = daysFromEpoch('2030-01-01');
+    const launch = findLaunchWindow(earth, jupiter, nominal, halfP1);
+    const launchDate = epochFromDaysJ2000(launch.days);
+
+    // Canonical frame: seg1 perihelion on +x (world). All segments share w=0 for continuous chaining.
+    // Seg1 goes CCW from perihelion (+1,0) to aphelion (-5.2,0) over halfP1.
+    // Seg2 continues CCW from aphelion (-5.2,0), through -y hemisphere, to perihelion (+0.02,0).
+    //   Its own perihelion time is (t_end), so at t=halfP1: M=-π, at t=halfP1+halfP2: M=0.
+    // Seg3 hyperbolic escape from (+0.02,0) with perihelion at t = halfP1+halfP2.
+    const seg1 = { a: a1, e: e1, w: 0,   tp: 0,                    tStart: 0,               tEnd: halfP1 };
+    const seg2 = { a: a2, e: e2, w: 0,   tp: halfP1 + halfP2,      tStart: halfP1,          tEnd: halfP1 + halfP2 };
+    const seg3 = { a: aEsc, e: eEsc, w: 0, tp: halfP1 + halfP2,    tStart: halfP1 + halfP2, tEnd: halfP1 + halfP2 + 22*365.25 };
+    let traj = buildFromSegments([seg1, seg2, seg3], 260);
+
+    // Rotate so that seg1's canonical +x start aligns with Earth's actual position at launch
+    const earthAngle = planetAngle(earth, launch.days);
+    traj = rotateTrajZ(traj, earthAngle);
+
+    return {
+      id: 'lyra',
+      name: 'Project Lyra',
+      target: "→ 1I/'Oumuamua",
+      epoch: fmtIso(launchDate),
+      trajectory: traj,
+      fit: 6.5,
+      note: `auto-tuned launch (Δphase ${launch.err.toFixed(1)}°)`,
+    };
+  }
+
+  function makeVoyager2() {
+    // Voyager 2 Grand Tour — real launch and real flyby dates. Each leg is a Lambert-solved
+    // Kepler arc through the target planet's actual heliocentric position at flyby time.
+    const jupiter = PLANETS[4], saturn = PLANETS[5], uranus = PLANETS[6], neptune = PLANETS[7];
+    const m = makeMissionFromFlybys(
+      'Voyager 2', '→ Interstellar space', '1977-08-20',
+      [
+        { date: '1979-07-09', posFn: d => planetPos(jupiter, d), label: 'Jupiter' },
+        { date: '1981-08-26', posFn: d => planetPos(saturn, d),  label: 'Saturn'  },
+        { date: '1986-01-24', posFn: d => planetPos(uranus, d),  label: 'Uranus'  },
+        { date: '1989-08-25', posFn: d => planetPos(neptune, d), label: 'Neptune' },
+      ],
+      35 * 365.25, 45
+    );
+    m.id = 'v2';
+    return m;
+  }
+
+  function makeNewHorizons() {
+    // Real launch, real Jupiter flyby, real Pluto flyby. Pluto is included in PLANETS with its
+    // 17° inclination so the arrival point sits at the true 3D Pluto position.
+    const jupiter = PLANETS[4], pluto = PLANETS[8];
+    const m = makeMissionFromFlybys(
+      'New Horizons', '→ Pluto & KBO', '2006-01-19',
+      [
+        { date: '2007-02-28', posFn: d => planetPos(jupiter, d), label: 'Jupiter' },
+        { date: '2015-07-14', posFn: d => planetPos(pluto, d),   label: 'Pluto'   },
+      ],
+      25 * 365.25, 48
+    );
+    m.id = 'nh';
+    return m;
+  }
+
+  function makePSP() {
+    // Parker Solar Probe — real launch 2018-08-12. Sequence of increasingly eccentric orbits
+    // rotating their line of apsides (Venus gravity assists) to shrink perihelion.
+    const earth = PLANETS[2];
+    const nominal = daysFromEpoch('2018-08-12');
+    const earthAngle = planetAngle(earth, nominal);
+
+    const orbits = [
+      { rp: 0.163, ra: 1.02 },
+      { rp: 0.130, ra: 0.86 },
+      { rp: 0.095, ra: 0.79 },
+      { rp: 0.074, ra: 0.75 },
+      { rp: 0.062, ra: 0.73 },
+      { rp: 0.046, ra: 0.73 },
+      { rp: 0.041, ra: 0.73 },
+      { rp: 0.041, ra: 0.73 },
+      { rp: 0.041, ra: 0.73 },
+    ];
+    // The spacecraft starts near Earth (1 AU aphelion of orbit 1 ≈ 1.02 AU).
+    // Anchor: aphelion of orbit 1 is at +x, so orbit 1 has ω = 180 (peri at −x).
+    // Successive orbits rotate their line of apsides via Venus flybys.
+    const segs = [];
+    let cum = 0;
+    let w = 180;
+    for (const o of orbits) {
+      const a = (o.rp + o.ra)/2;
+      const e = (o.ra - o.rp)/(o.ra + o.rp);
+      const period = 2 * Math.PI * Math.sqrt(a*a*a / MU) * 365.25;
+      // Start at aphelion → full orbit → aphelion. tp = tStart + period/2.
+      segs.push({ a, e, w, tp: cum + period/2, tStart: cum, tEnd: cum + period });
+      cum += period;
+      w += 22;   // apsides shift per flyby
+    }
+    let traj = buildFromSegments(segs, 160);
+    traj = rotateTrajZ(traj, earthAngle);
+    return {
+      id: 'psp',
+      name: 'Parker Solar Probe',
+      target: '→ Sun (0.04 AU)',
+      epoch: '2018-08-12',
+      trajectory: traj,
+      fit: 1.4,
+    };
+  }
+
+  function makeOumuamua() {
+    // 1I/'Oumuamua actual orbital elements (JPL small-body database):
+    // e = 1.20113, q = 0.25532 AU, i = 122.742°, Ω = 24.599°, ω = 241.811°, tp = 2017-09-09.5 (JD 2458006.0)
+    const e = 1.20113, q = 0.25532;
+    const a = -q / (e - 1);
+    const tpDate = daysFromEpoch('2017-09-09');
+    const epochDaysJ = daysFromEpoch('2017-01-01');
+    // Segment covers ±700 days from perihelion, in mission time (days from mission epoch).
+    // tp in mission time = tpDate - epochDaysJ.
+    const tpMission = tpDate - epochDaysJ;
+    const ts = [];
+    const N = 400;
+    for (let k = 0; k <= N; k++) ts.push(tpMission - 700 + (1600) * k / N);
+    let pts = kepler3D(a, e, 122.742, 24.599, 241.811, tpMission, ts, +1);
+    // Normalize so trajectory starts at t=0
+    const t0 = pts[0][0];
+    for (const p of pts) p[0] -= t0;
+    return {
+      id: 'oumua',
+      name: "1I/'Oumuamua",
+      target: '→ Interstellar (leaving)',
+      epoch: '2017-01-01',
+      trajectory: pts,
+      fit: 2.5,
+    };
+  }
+
+  function makeMarsHohmann() {
+    const earth = PLANETS[2], mars = PLANETS[3];
+    const a = (1 + 1.524)/2, e = (1.524-1)/(1.524+1);
+    const halfP = Math.PI * Math.sqrt(a*a*a / MU) * 365.25;
+    const nominal = daysFromEpoch('2028-11-01');
+    const launch = findLaunchWindow(earth, mars, nominal, halfP);
+    const launchDate = epochFromDaysJ2000(launch.days);
+    const earthAngle = planetAngle(earth, launch.days);
+    const seg = { a, e, w: 0, tp: 0, tStart: 0, tEnd: halfP };
+    let traj = buildFromSegments([seg], 160);
+    traj = rotateTrajZ(traj, earthAngle);
+    return {
+      id: 'mars',
+      name: 'Earth → Mars',
+      target: '→ Mars (Hohmann)',
+      epoch: fmtIso(launchDate),
+      trajectory: traj,
+      fit: 2.0,
+    };
+  }
+
+  const MISSIONS = [
+    makeLyra(),
+    makeOumuamua(),
+    makePSP(),
+    makeVoyager2(),
+    makeNewHorizons(),
+    makeMarsHohmann(),
+  ];
+
+  // ============ state ============
+  const state = {
+    missionIdx: 0,
+    current: null,
+    playing: true,
+    speed: 1,
+    daysPerSec: 30,
+    t: 0,
+    zoomAU: 6.5,
+    lastFrame: 0,
+    epochJ2000: 0,
+    opts: { orbits: true, labels: true, trail: true, full: false, grid: false, threeD: false },
+    cam: { azimuth: 0, elevation: 0 },     // top-down; changed when 3D on
+  };
+
+  const epochMs = iso => Date.parse(iso + 'T00:00:00Z');
+  const fmtDate = ms => {
+    const d = new Date(ms);
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];
+    return `${d.getUTCFullYear()} ${mo} ${String(d.getUTCDate()).padStart(2,'0')}`;
+  };
+  const fmtElapsed = days => days < 730 ? `${days.toFixed(0)} d` : `${(days/365.25).toFixed(2)} yr`;
+
+  function setMission(idx) {
+    state.missionIdx = idx;
+    state.current = MISSIONS[idx];
+    state.t = 0;
+    state.zoomAU = state.current.fit;
+    state.epochJ2000 = (epochMs(state.current.epoch) / 86400000) - J2000;
+    updateMissionButtons();
+    document.getElementById('hud-name').textContent = state.current.name;
+    document.getElementById('hud-target').textContent = state.current.target;
+    updateScale();
+  }
+
+  // ============ rendering ============
+  const canvas = document.getElementById('sky');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, scale = 100;
+
+  const STARS = (() => {
+    const rng = mulberry32(20260925);
+    const list = [];
+    for (let i = 0; i < 240; i++) {
+      list.push({ x: rng(), y: rng(), b: 0.15 + rng()*0.7, s: 0.5 + rng()*1.4 });
+    }
+    return list;
+  })();
+  function mulberry32(seed) {
+    return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function resize() {
+    dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+    const rect = canvas.getBoundingClientRect();
+    W = Math.floor(rect.width * dpr);
+    H = Math.floor(rect.height * dpr);
+    canvas.width = W;
+    canvas.height = H;
+    cx = W / 2;
+    cy = H / 2;
+    updateScale();
+  }
+
+  function updateScale() {
+    const minDim = Math.min(W, H);
+    scale = (minDim * 0.44) / state.zoomAU;
+    const nice = niceNumber(60 * dpr / scale);
+    const el = document.getElementById('scale-label');
+    if (el) el.textContent = nice >= 1 ? `${nice} AU` : `${nice.toFixed(2)} AU`;
+  }
+  function niceNumber(v) {
+    if (v <= 0) return 1;
+    const e = Math.floor(Math.log10(v));
+    const m = v / Math.pow(10, e);
+    const n = m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10;
+    return n * Math.pow(10, e);
+  }
+
+  // 3D → screen projection.
+  // Camera: yaw (azimuth) about z-axis, then pitch (elevation) about x-axis.
+  // At elevation=0 this reduces to the original top-down view (screenY = cy - y*scale).
+  function project(x, y, z) {
+    z = z || 0;
+    const { azimuth: az, elevation: el } = state.cam;
+    const cA = Math.cos(az), sA = Math.sin(az);
+    const cE = Math.cos(el), sE = Math.sin(el);
+    const xr = x * cA - y * sA;
+    const yr = x * sA + y * cA;
+    // Pitch about the (rotated) x-axis: y' = yr*cos(el) - z*sin(el), z' = yr*sin(el)+z*cos(el)
+    const yp = yr * cE - z * sE;
+    return [cx + xr * scale, cy - yp * scale];
+  }
+
+  function drawStars() {
+    ctx.save();
+    for (const s of STARS) {
+      ctx.globalAlpha = s.b;
+      ctx.fillStyle = '#eef4ff';
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.s * dpr * 0.55, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawGrid() {
+    if (!state.opts.grid) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(100, 130, 180, 0.11)';
+    ctx.lineWidth = 1 * dpr;
+    const maxAU = state.zoomAU * 1.4;
+    const step = niceNumber(state.zoomAU / 4);
+    // Ring polyline (unit circle → projected)
+    for (let r = step; r <= maxAU; r += step) {
+      ctx.beginPath();
+      const N = 96;
+      for (let k = 0; k <= N; k++) {
+        const th = (k/N) * 2 * Math.PI;
+        const [sx, sy] = project(r*Math.cos(th), r*Math.sin(th), 0);
+        if (k === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawSun() {
+    const [sx, sy] = project(0, 0, 0);
+    ctx.save();
+    const rGlow = Math.max(60 * dpr, 0.06 * scale);
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rGlow);
+    g.addColorStop(0, 'rgba(255,200,110,0.65)');
+    g.addColorStop(0.4, 'rgba(255,180,80,0.18)');
+    g.addColorStop(1, 'rgba(255,180,80,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(sx, sy, rGlow, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#ffcb6a';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4 * dpr, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const orbitCache = new Map();
+  function drawOrbits() {
+    if (!state.opts.orbits) return;
+    ctx.save();
+    ctx.lineWidth = 1 * dpr;
+    ctx.strokeStyle = 'rgba(120,150,200,0.18)';
+    for (const p of PLANETS) {
+      if (p.a > state.zoomAU * 1.3) continue;
+      let poly = orbitCache.get(p.name);
+      if (!poly) { poly = orbitPolyline(p, 220); orbitCache.set(p.name, poly); }
+      ctx.beginPath();
+      for (let i = 0; i < poly.length; i++) {
+        const [x, y, z] = poly[i];
+        const [sx, sy] = project(x, y, z);
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPlanets() {
+    ctx.save();
+    ctx.font = `${11 * dpr}px 'IBM Plex Mono', monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    for (const p of PLANETS) {
+      if (p.a > state.zoomAU * 1.3) continue;
+      const days = state.epochJ2000 + state.t;
+      const pos = planetPos(p, days);
+      const [sx, sy] = project(pos.x, pos.y, pos.z);
+      ctx.beginPath();
+      ctx.arc(sx, sy, p.r * dpr * 0.7, 0, Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      if (p.name === 'Earth') {
+        ctx.strokeStyle = 'rgba(90,168,255,0.35)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.r * dpr * 1.4, 0, Math.PI*2);
+        ctx.stroke();
+      }
+      if (state.opts.labels) {
+        ctx.fillStyle = 'rgba(200,215,240,0.72)';
+        ctx.fillText(p.name, sx + 8*dpr, sy - 8*dpr);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawTrajectory() {
+    const traj = state.current.trajectory;
+    if (!traj || !traj.length) return;
+
+    if (state.opts.full) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(124,196,255,0.14)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i < traj.length; i++) {
+        const [, x, y, z] = traj[i];
+        const [sx, sy] = project(x, y, z);
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (state.opts.trail) {
+      const idx = findIndex(traj, state.t);
+      ctx.save();
+      ctx.lineJoin = 'round';
+      // Bloom underlay
+      ctx.strokeStyle = 'rgba(124,196,255,0.18)';
+      ctx.lineWidth = 4 * dpr;
+      strokeTrail();
+      // Sharp line
+      ctx.strokeStyle = 'rgba(124,196,255,0.9)';
+      ctx.lineWidth = 1.7 * dpr;
+      strokeTrail();
+      ctx.restore();
+
+      function strokeTrail() {
+        ctx.beginPath();
+        for (let i = 0; i <= idx; i++) {
+          const [, x, y, z] = traj[i];
+          const [sx, sy] = project(x, y, z);
+          if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        const cur = interpolate(traj, state.t);
+        if (cur) {
+          const [sx, sy] = project(cur.x, cur.y, cur.z);
+          ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+    }
+
+    const cur = interpolate(traj, state.t);
+    if (cur) {
+      const [sx, sy] = project(cur.x, cur.y, cur.z);
+      ctx.save();
+      const rGlow = 18 * dpr;
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rGlow);
+      g.addColorStop(0, 'rgba(180,224,255,0.9)');
+      g.addColorStop(0.4, 'rgba(124,196,255,0.35)');
+      g.addColorStop(1, 'rgba(124,196,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, rGlow, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#eaf4ff';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3 * dpr, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function findIndex(traj, t) {
+    let lo = 0, hi = traj.length - 1, ans = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (traj[mid][0] <= t) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+    }
+    return ans;
+  }
+  function interpolate(traj, t) {
+    if (!traj.length) return null;
+    if (t <= traj[0][0]) { const p = traj[0]; return { x: p[1], y: p[2], z: p[3]||0, vAU_day: 0 }; }
+    if (t >= traj[traj.length-1][0]) {
+      const last = traj[traj.length-1];
+      const prev = traj[traj.length-2] || last;
+      const dt = last[0] - prev[0] || 1;
+      return { x: last[1], y: last[2], z: last[3]||0,
+               vAU_day: Math.hypot((last[1]-prev[1])/dt, (last[2]-prev[2])/dt, ((last[3]||0)-(prev[3]||0))/dt) };
+    }
+    const i = findIndex(traj, t);
+    const a = traj[i], b = traj[i+1] || a;
+    const span = b[0] - a[0] || 1;
+    const f = (t - a[0]) / span;
+    const az = a[3]||0, bz = b[3]||0;
+    return {
+      x: a[1] + (b[1] - a[1]) * f,
+      y: a[2] + (b[2] - a[2]) * f,
+      z: az + (bz - az) * f,
+      vAU_day: Math.hypot((b[1]-a[1])/span, (b[2]-a[2])/span, (bz-az)/span),
+    };
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    drawStars();
+    drawGrid();
+    drawSun();
+    drawOrbits();
+    drawTrajectory();
+    drawPlanets();
+  }
+
+  function updateHud() {
+    const m = state.current;
+    const epoch = epochMs(m.epoch);
+    document.getElementById('hud-date').textContent = fmtDate(epoch + state.t * 86400000);
+    document.getElementById('hud-elapsed').textContent = fmtElapsed(state.t);
+    const cur = interpolate(m.trajectory, state.t);
+    if (cur) {
+      const r = Math.hypot(cur.x, cur.y, cur.z);
+      document.getElementById('hud-r').textContent = r < 1 ? `${r.toFixed(3)} AU` : `${r.toFixed(2)} AU`;
+      const kmps = cur.vAU_day * AU_KM / 86400;
+      document.getElementById('hud-v').textContent = `${kmps.toFixed(1)} km/s`;
+    }
+    const last = m.trajectory[m.trajectory.length-1][0];
+    const f = Math.max(0, Math.min(1, state.t / last));
+    document.getElementById('fill').style.width = (f*100) + '%';
+    document.getElementById('handle').style.left = (f * document.getElementById('scrubber').clientWidth) + 'px';
+  }
+
+  function tick(nowMs) {
+    if (!state.lastFrame) state.lastFrame = nowMs;
+    const dt = (nowMs - state.lastFrame) / 1000;
+    state.lastFrame = nowMs;
+    if (state.playing) {
+      const last = state.current.trajectory[state.current.trajectory.length-1][0];
+      state.t += dt * state.daysPerSec * state.speed;
+      if (state.t > last) state.t = 0;
+    }
+    render();
+    updateHud();
+    requestAnimationFrame(tick);
+  }
+
+  // ============ UI wiring ============
+  function buildMissionButtons() {
+    const wrap = document.getElementById('missions');
+    wrap.innerHTML = '';
+    MISSIONS.forEach((m, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'mission-btn';
+      btn.dataset.idx = i;
+      btn.innerHTML = `<span class="name">${m.name}</span><span class="meta mono">${m.epoch} · ${m.target.replace(/^→ /, '')}</span>`;
+      btn.addEventListener('click', () => setMission(i));
+      wrap.appendChild(btn);
+    });
+  }
+  function updateMissionButtons() {
+    for (const btn of document.querySelectorAll('.mission-btn')) {
+      btn.classList.toggle('active', +btn.dataset.idx === state.missionIdx);
+    }
+  }
+
+  function bindToggles() {
+    const map = { 'opt-orbits':'orbits', 'opt-labels':'labels', 'opt-trail':'trail', 'opt-full':'full', 'opt-grid':'grid' };
+    for (const [id, key] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      el.checked = state.opts[key];
+      el.addEventListener('change', () => { state.opts[key] = el.checked; });
+    }
+    const t3d = document.getElementById('opt-3d');
+    t3d.addEventListener('change', () => {
+      state.opts.threeD = t3d.checked;
+      if (state.opts.threeD) {
+        state.cam.elevation = deg(32);
+        state.cam.azimuth = 0;
+        canvas.classList.remove('flat');
+      } else {
+        state.cam.elevation = 0;
+        state.cam.azimuth = 0;
+        canvas.classList.add('flat');
+      }
+    });
+  }
+
+  function bindPlayControls() {
+    document.getElementById('play').addEventListener('click', () => {
+      state.playing = !state.playing;
+      renderPlayIcon();
+    });
+    document.getElementById('speed').addEventListener('change', (e) => {
+      state.speed = parseFloat(e.target.value);
+    });
+    const s = document.getElementById('scrubber');
+    let dragging = false;
+    const seek = (clientX) => {
+      const rect = s.getBoundingClientRect();
+      const f = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const last = state.current.trajectory[state.current.trajectory.length-1][0];
+      state.t = f * last;
+    };
+    s.addEventListener('mousedown', (e) => { dragging = true; state.playing = false; renderPlayIcon(); seek(e.clientX); });
+    window.addEventListener('mousemove', (e) => { if (dragging) seek(e.clientX); });
+    window.addEventListener('mouseup', () => { dragging = false; });
+    s.addEventListener('touchstart', (e) => { dragging = true; state.playing = false; renderPlayIcon(); seek(e.touches[0].clientX); }, {passive: true});
+    window.addEventListener('touchmove', (e) => { if (dragging) seek(e.touches[0].clientX); }, {passive: true});
+    window.addEventListener('touchend', () => { dragging = false; });
+  }
+  function renderPlayIcon() {
+    const el = document.getElementById('play-icon');
+    el.innerHTML = state.playing
+      ? '<rect x="4" y="3" width="3" height="10" fill="currentColor"/><rect x="9" y="3" width="3" height="10" fill="currentColor"/>'
+      : '<path fill="currentColor" d="M4 3 L13 8 L4 13 Z"/>';
+  }
+
+  function bindZoom() {
+    document.getElementById('zoom-in').addEventListener('click', () => {
+      state.zoomAU = Math.max(0.05, state.zoomAU / 1.5); updateScale();
+    });
+    document.getElementById('zoom-out').addEventListener('click', () => {
+      state.zoomAU = Math.min(200, state.zoomAU * 1.5); updateScale();
+    });
+    document.getElementById('zoom-fit').addEventListener('click', () => {
+      const traj = state.current.trajectory;
+      let maxR = 1;
+      for (const p of traj) maxR = Math.max(maxR, Math.hypot(p[1], p[2], p[3]||0));
+      state.zoomAU = maxR * 1.15; updateScale();
+    });
+    document.getElementById('view-reset').addEventListener('click', () => {
+      state.cam.azimuth = 0;
+      state.cam.elevation = state.opts.threeD ? deg(32) : 0;
+    });
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const f = e.deltaY > 0 ? 1.15 : 1/1.15;
+      state.zoomAU = Math.max(0.05, Math.min(200, state.zoomAU * f));
+      updateScale();
+    }, { passive: false });
+  }
+
+  function bindCameraDrag() {
+    let dragging = false, lastX = 0, lastY = 0;
+    const start = (x, y) => {
+      if (!state.opts.threeD) return;   // no drag-rotate in top-down mode
+      dragging = true; lastX = x; lastY = y;
+      canvas.classList.add('dragging');
+    };
+    const move = (x, y) => {
+      if (!dragging) return;
+      const dx = x - lastX, dy = y - lastY;
+      lastX = x; lastY = y;
+      state.cam.azimuth += dx * 0.006;
+      state.cam.elevation = Math.max(deg(0), Math.min(deg(85), state.cam.elevation + dy * 0.006));
+    };
+    const end = () => { dragging = false; canvas.classList.remove('dragging'); };
+    canvas.addEventListener('mousedown', (e) => start(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', (e) => { const t = e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
+    window.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY); }, {passive:true});
+    window.addEventListener('touchend', end);
+  }
+
+  function bindJsonIO() {
+    const input = document.getElementById('json-input');
+    const status = document.getElementById('status');
+    const setStatus = (msg, cls='') => { status.textContent = msg; status.className = 'status ' + cls; };
+    document.getElementById('load-json').addEventListener('click', () => {
+      const txt = input.value.trim();
+      if (!txt) { setStatus('Paste JSON first.', 'err'); return; }
+      try {
+        const obj = JSON.parse(txt);
+        const traj = validateTrajectory(obj);
+        const mission = {
+          id: 'custom-' + Date.now(),
+          name: obj.name || 'Custom mission',
+          target: obj.target ? '→ ' + obj.target : '→ ?',
+          epoch: obj.epoch || '2030-01-01',
+          trajectory: traj,
+          fit: Math.max(...traj.map(p => Math.hypot(p[1], p[2], p[3]||0))) * 1.15,
+        };
+        const existing = MISSIONS.findIndex(m => m.id.startsWith('custom-'));
+        if (existing >= 0) MISSIONS.splice(existing, 1);
+        MISSIONS.push(mission);
+        buildMissionButtons();
+        setMission(MISSIONS.length - 1);
+        setStatus(`Loaded "${mission.name}" · ${traj.length} points`, 'ok');
+      } catch (err) {
+        setStatus('Error: ' + err.message, 'err');
+      }
+    });
+    document.getElementById('export-json').addEventListener('click', () => {
+      const m = state.current;
+      const r4 = v => Math.round(v * 10000) / 10000;
+      const r2 = v => Math.round(v * 100) / 100;
+      const has3D = m.trajectory.some(p => Math.abs(p[3]||0) > 1e-6);
+      const out = {
+        name: m.name,
+        epoch: m.epoch,
+        target: m.target.replace(/^→ /, ''),
+        trajectory: m.trajectory.map(p => has3D ? [r2(p[0]), r4(p[1]), r4(p[2]), r4(p[3]||0)] : [r2(p[0]), r4(p[1]), r4(p[2])]),
+      };
+      input.value = JSON.stringify(out, null, 2);
+      setStatus(`Exported "${m.name}" — copy from the box above.`, 'ok');
+    });
+  }
+  function validateTrajectory(obj) {
+    if (!obj || typeof obj !== 'object') throw new Error('Expected an object.');
+    if (!Array.isArray(obj.trajectory)) throw new Error('Missing "trajectory" array.');
+    const pts = [];
+    for (let i = 0; i < obj.trajectory.length; i++) {
+      const row = obj.trajectory[i];
+      if (!Array.isArray(row) || row.length < 3) throw new Error(`Row ${i}: expected [days, x, y] or [days, x, y, z].`);
+      const t = Number(row[0]), x = Number(row[1]), y = Number(row[2]);
+      const z = row.length > 3 ? Number(row[3]) : 0;
+      if ([t,x,y,z].some(v => !Number.isFinite(v))) throw new Error(`Row ${i}: non-finite value.`);
+      pts.push([t, x, y, z]);
+    }
+    if (pts.length < 2) throw new Error('Need at least 2 points.');
+    pts.sort((a,b) => a[0] - b[0]);
+    const t0 = pts[0][0];
+    for (const p of pts) p[0] -= t0;
+    return pts;
+  }
+
+  // ============ boot ============
+  function boot() {
+    buildMissionButtons();
+    bindToggles();
+    bindPlayControls();
+    bindZoom();
+    bindCameraDrag();
+    bindJsonIO();
+    setMission(0);
+    resize();
+    renderPlayIcon();
+    requestAnimationFrame(tick);
+    window.addEventListener('resize', resize);
+  }
+  boot();
+})();
+</script>
